@@ -118,11 +118,12 @@
     "deep-freeze-strict": "1.1.1",
     "drag-drop": "2.11.0",
     "es6-promise": "3.2.1",
+    "hyperx": "2.0.4",
     "mime-types": "2.1.11",
     "namespace-emitter": "1.0.0",
     "pretty-bytes": "3.0.1",
     "tus-js-client": "1.1.4",
-    "whatwg-fetch": "1.0.0",
-    "yo-yo": "1.2.2"
+    "virtual-dom": "2.1.1",
+    "whatwg-fetch": "1.0.0"
   }
 }

@@ -1,4 +1,8 @@
-import yo from 'yo-yo'
+// import yo from 'yo-yo'
+
+var diff = require('virtual-dom/diff')
+var patch = require('virtual-dom/patch')
+var createElement = require('virtual-dom/create-element')
 
 /**
  * Boilerplate that all Plugins share - and should not be used
@@ -22,13 +26,20 @@ export default class Plugin {
     this.install = this.install.bind(this)
   }
 
-  update (state) {
+  update (newState) {
     if (typeof this.el === 'undefined') {
       return
     }
 
-    const newEl = this.render(state)
-    yo.update(this.el, newEl)
+    // const newEl = this.render(state)
+    // yo.update(this.el, newEl)
+
+    // new
+    const newTree = this.render(newState)
+    const patches = diff(this.tree, newTree)
+    this.el = patch(this.el, patches)
+    this.tree = newTree
+    // new
 
     // optimizes performance?
     // requestAnimationFrame(() => {
@@ -55,7 +66,14 @@ export default class Plugin {
       // if (replaceTargetContent) {
       //   document.querySelector(target).innerHTML = ''
       // }
-      this.el = plugin.render(this.core.state)
+
+      // new
+      this.tree = plugin.render(this.core.state)
+      this.el = createElement(this.tree)
+      // this.el = createElement(this.tree)
+      // new
+
+      // this.el = plugin.render(this.core.state)
       document.querySelector(target).appendChild(this.el)
 
       return target

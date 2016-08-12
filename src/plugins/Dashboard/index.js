@@ -135,7 +135,7 @@ export default class DashboardUI extends Plugin {
     // add class to body that sets position fixed
     document.body.classList.add('is-UppyDashboard-open')
     // focus on modal inner block
-    document.querySelector('*[tabindex="0"]').focus()
+    // document.querySelector('*[tabindex="0"]').focus()
   }
 
   initEvents () {
