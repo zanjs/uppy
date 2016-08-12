@@ -1,7 +1,7 @@
 import Utils from '../../core/Utils'
 import Plugin from '../Plugin'
 import 'whatwg-fetch'
-import html from '../core/html'
+import html from '../../core/html'
 
 import AuthView from './AuthView'
 import Browser from './Browser'
