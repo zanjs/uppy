@@ -1,7 +1,11 @@
 const Plugin = require('./Plugin')
 const Utils = require('../core/Utils')
 const Translator = require('../core/Translator')
-const html = require('yo-yo')
+// const html = require('yo-yo')
+
+const { h } = require('preact')
+const hyperx = require('hyperx')
+const html = hyperx(h)
 
 module.exports = class FileInput extends Plugin {
   constructor (core, opts) {
@@ -61,8 +65,7 @@ module.exports = class FileInput extends Plugin {
            type="file"
            name="files[]"
            onchange=${this.handleInputChange.bind(this)}
-           multiple="${this.opts.multipleFiles ? 'true' : 'false'}"
-           value="">`
+           multiple="${this.opts.multipleFiles ? 'true' : 'false'}">`
 
     return html`<form class="Uppy uppy-FileInput-form">
       ${input}

@@ -1,4 +1,5 @@
-const yo = require('yo-yo')
+// const yo = require('yo-yo')
+const { render } = require('preact')
 
 /**
  * Boilerplate that all Plugins share - and should not be used
@@ -31,13 +32,11 @@ module.exports = class Plugin {
     }
 
     const newEl = this.render(state)
-    yo.update(this.el, newEl)
-
-    // optimizes performance?
-    // requestAnimationFrame(() => {
-    //   const newEl = this.render(state)
-    //   yo.update(this.el, newEl)
-    // })
+    // console.log(newEl)
+    // console.log(document.querySelector(this.target))
+    // console.log(this.el)
+    // yo.update(this.el, newEl)
+    this.el = render(newEl, document.querySelector(this.target), this.el)
   }
 
   /**
@@ -50,6 +49,7 @@ module.exports = class Plugin {
    */
   mount (target, plugin) {
     const callerPluginName = plugin.id
+    this.target = target
 
     if (typeof target === 'string') {
       this.core.log(`Installing ${callerPluginName} to ${target}`)
@@ -59,8 +59,8 @@ module.exports = class Plugin {
         document.querySelector(target).innerHTML = ''
       }
 
-      this.el = plugin.render(this.core.state)
-      document.querySelector(target).appendChild(this.el)
+      this.el = render(plugin.render(this.core.state), document.querySelector(target))
+      // document.querySelector(target).appendChild(this.el)
 
       return target
     } else {
