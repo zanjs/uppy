@@ -1,4 +1,4 @@
 {
   "presets": ["es2015-loose"],
-  "plugins": ["add-module-exports", "transform-object-assign", "es6-promise", "transform-react-jsx"]
+  "plugins": ["transform-react-jsx", "add-module-exports", "transform-object-assign", "es6-promise"]
 }
