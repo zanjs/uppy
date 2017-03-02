@@ -23,10 +23,8 @@ Ideas that will be planned and find their way into a release at one point
 - [ ] core: Decouple rendering from Plugins and try to make Uppy work with React (add basic example) to remain aware of possible issues (@hedgerh), look at https://github.com/akiran/react-slick, https://github.com/nosir/cleave.js
 - [ ] core: Have base styles, be explicit about fonts, etc
 - [ ] core: Make sure Uppy works well in VR
-- [ ] instagram: Make a barely working Instagram Plugin + example (#21)
-- [ ] meta: Use <waffle.io> or GitHub Projects instead of Markdown task tracking. Some discussion [here](https://transloadit.slack.com/archives/general/p1455693654000062) (@kvz)
 - [ ] dashboard: add ability to minimize Modal/Dashboard, while long upload is in progress? Uppy then becomes just a tiny progress indicator
-- [ ] test: Human should check http://www.webpagetest.org, use it sometimes to test our website & Uppy? Which will show response/loading times and where big delays are
+- [ ] test: Human should check http://www.webpagetest.org and https://developers.google.com/web/tools/lighthouse/, use it sometimes to test website and Uppy. Will show response/loading times and other issues
 - [ ] test: Human should test with real screen reader to identify accessibility problems
 - [ ] test: add https://github.com/pa11y/pa11y for automated accessibility testing
 - [ ] test: Make Edge and Safari work via the tunnel so we can test localhost instead of uppy.io, and test the current build, vs the previous deploy that way
@@ -34,56 +32,101 @@ Ideas that will be planned and find their way into a release at one point
 - [ ] website: scrollbars on code samples (can’t reproduce!) (@arturi)
 - [ ] dependencies: es6-promise --> lie https://github.com/calvinmetcalf/lie ?
 - [ ] core: accessibility research: https://chrome.google.com/webstore/detail/accessibility-developer-t/fpkknkljclfencbdbgkenhalefipecmb, http://khan.github.io/tota11y/
-- [ ] core: retry failed uploads
 - [ ] core: restrictions — by file type, size, number of files
 - [ ] core: see if it’s possible to add webworkers or use pica for thumbnail generation (@arturi)
 - [ ] website: Would one really connect a own google drive or dropbox for testing purpose? => maybe one can give something like a testing account of google drive and dropbox to try uppy
-- [ ] meta: add google demo account (@kvz)
 - [ ] meta: Set up a Google testing account that people can use to try the demo (@hedgerh)
 - [ ] dashboard: maybe add perfect scrollbar https://github.com/noraesae/perfect-scrollbar (@arturi)
-- [ ] google drive: show error view for things like not being able to connect to uppy server (@hedgerh)
-- [ ] uppy-server: Make uppy server standalone CLI (@hedgerh)
 - [ ] core: try file-type module for setting correct mime-types if needed, example: http://requirebin.com/?gist=f9bea9602030f1320a227cf7f140c45f, http://stackoverflow.com/a/29672957
-- [ ] uppy/uppy-server: review webscoket connection flow during remote upload. In a situation where a client has a slow internet connection, the uppy-server may complete an upload before the client connects to the websocket, hence no feedback would be sent to the client and the client remains unaware of the upload status.
 - [ ] uppy-server: pluggable custom providers; Maybe we use a config file or make it similar to how uppy adds plugins (@ifedapoolarewaju)
-- [ ] uppy-server: begin to write automated tests (@ifedapoolarewaju)
+- [ ] ui: do we want https://github.com/kazzkiq/balloon.css ?
+- [ ] core: consider adding nanoraf https://github.com/yoshuawuyts/choo/pull/135/files?diff=unified (@arturi)
+
+## 0.16.0
+To be released: March 31, 2017
+
+- [ ] presets: Add basic version of Transloadit plugin (#28) (@arturi, @kvz)
+- [ ] instagram: Make a barely working Instagram Plugin (#21)
+- [ ] dashboard: add service logo / name to the selected file in file list (@arturi)
+- [ ] uppy/uppy-server: review webscoket connection flow during remote upload. In a situation where a client has a slow internet connection, the uppy-server may complete an upload before the client connects to the websocket, hence no feedback would be sent to the client and the client remains unaware of the upload status.
+- [ ] provider: improve UI: add icons for file types (@arturi)
+- [ ] provider: improve UI: improve overall look, breadcrumbs (@arturi)
+- [ ] provider: improve UI: steps towards making it responsive (@arturi)
+- [ ] provider: loading indicator while the GoogleDrive / Dropbox files are loading (@arturi, @ifedapoolarewaju)
+- [ ] test: add tests for `npm install uppy` and running in different browsers, the real world use case (@arturi)
+- [ ] server: begin adding automated tests, maybe try https://facebook.github.io/jest (@ifedapoolarewaju)
+- [ ] server: add image preview / thumbnail for remote files, if its in the API of services ? (@ifedapoolarewaju)
+- [ ] uppy/uppy-server: allow google drive/dropbox non-tus (i.e multipart) remote uploads
+- [ ] dashboard: see if transitions can be fixed in Firefox (@arturi)
+- [ ] uploaders: make sure uploads retry/resume if started when offline or disconnected (@arturi, @ifedapoolarewaju)
+- [ ] uploaders: retry when back online / failed https://github.com/transloadit/uppy/pull/135 (@arturi)
+- [ ] server: research having less permissions, smaller auth expiration time for security ? (@ifedapoolarewaju)
+- [ ] server: what if smth changed in GDrive while it was open in Uppy? refresh file list? (@ifedapoolarewaju)
+- [ ] core: research !important styles to be immune to any environment/page. Maybe use smth like https://www.npmjs.com/package/postcss-safe-important. Or increase specificity (with .Uppy) (@arturi)
+- [ ] core: file type detection: archives, markdown (possible modules: file-type, identify-filetype) (@arturi)
+- [ ] server: consider not showing progress updates from the server after an upload’s been paused (@arturi, @ifedapoolarewaju)
+- [ ] server: throttle progress updates sent through websockets, sometimes it can get overwhelming when uploads are fast (@ifedapoolarewaju)
+- [ ] server: research parallelizing downloading/uploading remote files: start uploading chunks right away, while still storing the file on disk (@ifedapoolarewaju)
+- [ ] dashboard: show status “Upload started...” when the remote upload has begun, but no progress events received yet (@arturi)
+- [ ] server: delete file from local disk after upload is successful (@ifedapoolarewaju)
 
 ## 0.15.0
 
-To be released: TBA
-Theme: TBA
+To be released: February 24, 2017
+Theme: Speeding and cleaning
 
-- [ ] presets: Add basic preset or plugin that mimics Transloadit’s jQuery plugin (#28) (@arturi, @kvz)
-- [ ] server: loading indicator while the GoogleDrive/Dropbox files are loading (@arturi, @ifedapoolarewaju)
-- [ ] server: refactor local/remote uploads in tus, allow for pause/resume with remote upload (@arturi, @ifedapoolarewaju)
+- [x] build: update dependencies and eslint-plugin-standard, nodemon --> onchange, because simpler and better options (@arturi)
+- [x] build: fix `Function.caller` issue in `lib` which gets published to NPM package, add babel-plugin-yo-yoify (@arturi #158 #163)
+- [x] provider: show error view for things like not being able to connect to uppy server  should this be happening when uppy-server is unavailable http://i.imgur.com/cYJakc9.png (@arturi, @ifedapoolarewaju)
+- [x] provider: loading indicator while the GoogleDrive / Dropbox files are loading (@arturi, @ifedapoolarewaju)
+- [x] provider: logout link/button? (@arturi, @ifedapoolarewaju)
+- [x] provider: fix breadcrumbs (@ifedapoolarewaju)
+- [x] server: refactor local/remote uploads in tus, allow for pause/resume with remote upload (@arturi, @ifedapoolarewaju)
+- [x] server: pass file size from Google Drive / Dropbox ? (@ifedapoolarewaju)
+- [x] server: return uploaded file urls (from Google Drive / Dropbox) ? (@ifedapoolarewaju)
+- [ ] dashboard: basic React component (@arturi)
+- [x] core: experiment with `nanoraf` and `requestAnimationFrame` (@arturi)
+- [x] core: add throttling of progress updates (@arturi)
+- [x] dashobard: fix Missing `file.progress.bytesTotal` property  (@arturi #152)
+- [x] dashboard: switch to prettier-bytes for more user-friendly progress updates (@arturi)
+- [x] dashboard: fix `updateDashboardElWidth()` not firing in time, causing container width to be 0 (@arturi)
+- [x] multipart: treat all 2xx responses as successful, return xhr object in `core:upload-success` (@arturi #156 #154)
+- [x] dashboard: throttle StatusBar numbers, so they update only once a second (@arturi, @acconut)
+- [x] dashboard: add titles to pause/resume/cancel in StatusBar (@arturi)
+- [x] dashboard: precise `circleLength` and `stroke-dasharray/stroke-dashoffset` calculation for progress circles on FileItem (@arturi)
+- [x] dashboard: don’t show per-file detailed progress by default — too much noise (@arturi)
+- [x] website: blog post and images cleanup (@arturi)
+- [ ] website: try on a Github ribbon http://tholman.com/github-corners/ (@arturi #150)
+- [ ] website: different meta description for pages and post (@arturi)
 
 ## 0.14.0
 
 To be released: January 27, 2017.
-Theme: The new 13: Mobile Dashboard, Grid and List
+Theme: The new 13: Responsive Dashboard, Standalone & Pluggable Server, Dropbox
 
-- [x] dashboard: use `isWide` instead of media queries, so that compact/mobile version can be used in bigger screens too (@arturi)
+- [x] dashboard: use `isWide` prop/class instead of media queries, so that compact/mobile version can be used in bigger screens too (@arturi)
 - [x] dashboard: basic “list” view in addition to current “grid” view (@arturi)
-- [ ] dashboard: basic React component (@arturi)
-- [ ] dashboard: more icons for file types (@arturi)
-- [ ] dashboard: figure out where to place Informer, accounting for StatusBar (@arturi)
+- [x] dashboard: more icons for file types (@arturi)
+- [x] dashboard: add totalSize and totalUploadedSize to StatusBar (@arturi)
+- [x] dashboard: figure out where to place Informer, accounting for StatusBar — over the StatusBar for now (@arturi)
+- [x] dashboard: add `<progress>` element for progressbar, like here https://overcast.fm/+BtuxMygVg/. Added hidden for now, for semantics/accessibility (@arturi)
 - [x] dragdrop: show number of selected files, remove upload btn (@arturi)
 - [x] build: exclude locales from build (@arturi)
 - [x] core: i18n for each plugin in options — local instead of global (@arturi)
 - [x] core: add default pluralization (can be overrinden in plugin options) to Translator (@arturi)
 - [x] core: use yo-yoify to solve [Function.caller / strict mode issue](https://github.com/shama/bel#note) and make our app faster/smaller by transforming template strings into pure and fast document calls (@arturi)
-- [ ] server: investigate a pluggable uppy-server (express / koa for now) (@ifedapoolarewaju)
-- [ ] server: research having less permissions, smaller auth expiration time for security ? (@ifedapoolarewaju)
-- [ ] server: smooth authentication: after auth you are back in your app where you left, no page reloads (@ifedapoolarewaju)
-- [ ] tus: fix upload progress from uppy-server (@arturi, @ifedapoolarewaju)
-- [ ] dashboard: consider `<progress>` element for progressbar, like here https://overcast.fm/+BtuxMygVg/ (@arturi)
-- [ ] uploaders: return upload result in multipart? options for that?
+- [x] server: a pluggable uppy-server (express / koa for now) (@ifedapoolarewaju)
+- [x] server: standalone uppy-server (@ifedapoolarewaju)
+- [x] server: Integrate dropbox plugin (@ifedapoolarewaju)
+- [x] server: smooth authentication: after auth you are back in your app where you left, no page reloads (@ifedapoolarewaju)
+- [x] tus: fix upload progress from uppy-server (@arturi, @ifedapoolarewaju)
+- [x] core: basic React component — DnD (@arturi)
 - [x] core: fix support for both ES6 module import and CommonJS requires with `add-module-exports` babel plugin (@arturi)
 
 ## 0.13.0
 
 To be released: December 23, 2016.
-Theme: The release that wasn't.
+Theme: The release that wasn't 🎄  
 
 ## 0.12.0
 
@@ -153,7 +196,7 @@ Theme: Getting together
 - [x] google drive: improve UI (@hedgerh)
 - [x] tus: add `resumable` capability flag (@arturi)
 - [x] tus: start fixing pause/resume issues and race conditions (@arturi)
-- [x] test: working Uppy example on Require Bin — latest version straight from NPM http://requirebin.com/?gist=54e076cccc929cc567cb0aba38815105 (@arturi @account)
+- [x] test: working Uppy example on Require Bin — latest version straight from NPM http://requirebin.com/?gist=54e076cccc929cc567cb0aba38815105 (@arturi @acconut)
 - [x] meta: update readme docs, add unpkg CDN links (https://unpkg.com/uppy/dist/uppy.min.css) (@arturi)
 - [x] meta: write 0.10 release blog post (@arturi)
 
@@ -166,7 +209,7 @@ Theme: Making Progress, Then Pause & Resume
 - [x] dashboard: informer interface: message when all uploads are "done" (@arturi)
 - [x] meta: write 0.9 release blog post (@hedgerh)
 - [x] webcam: a barely working webcam record & upload (@hedgerh)
-- [x] metadata: Uppy + tus empty metadata value issue in Safari https://github.com/tus/tus-js-client/issues/41 --> tus issue — nailed down, passed to @account (@arturi, @account)
+- [x] metadata: Uppy + tus empty metadata value issue in Safari https://github.com/tus/tus-js-client/issues/41 --> tus issue — nailed down, passed to @acconut (@arturi, @acconut)
 - [x] core: experiment with switching to `virtual-dom` in a separate branch; experiment with rollup again (@arturi)
 - [x] core: figure out race conditions (animations not completing because file div gets re-added to the dom each time) with `yo-yo`/`morphdom` https://github.com/shama/bel/issues/26#issuecomment-238004130 (@arturi)
 - [x] core: switch to https://github.com/sethvincent/namespace-emitter — smaller, allows for `on('*')` (@arturi)
@@ -394,18 +437,11 @@ Released: December 20, 2015
 
 Here are the go-to folks for each individual component or area of expertise:
 
-- build (@hedgerh)
-- complete (@hedgerh)
+- build (@arturi)
 - core (@arturi)
-- dashboard (/modal) (@hedgerh)
+- dashboard (@arturi)
 - docs (@arturi)
 - dragdrop (@arturi)
-- drive (@hedgerh)
-- dropbox (@hedgerh)
-- instagram (@hedgerh)
-- meta (@kvz)
-- presets (@arturi)
-- server (@ifedapoolarewaju)
-- test (@arturi)
+- server and providers: gdrive, dropbox (@ifedapoolarewaju)
 - tus (@arturi)
 - website (@arturi)

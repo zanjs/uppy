@@ -5,7 +5,7 @@ const Dashboard = require('./Dashboard')
 const { getSpeed } = require('../../core/Utils')
 const { getETA } = require('../../core/Utils')
 const { prettyETA } = require('../../core/Utils')
-const prettyBytes = require('pretty-bytes')
+const prettyBytes = require('prettier-bytes')
 const { defaultTabIcon } = require('./icons')
 
 /**
@@ -47,7 +47,7 @@ module.exports = class DashboardUI extends Plugin {
       height: 550,
       semiTransparent: false,
       defaultTabIcon: defaultTabIcon(),
-      showProgressDetails: true,
+      showProgressDetails: false,
       locale: defaultLocale
     }
 
@@ -161,6 +161,8 @@ module.exports = class DashboardUI extends Plugin {
     document.querySelector('.UppyDashboard-inner').focus()
 
     this.updateDashboardElWidth()
+    // to be sure, sometimes when the function runs, container size is still 0
+    setTimeout(this.updateDashboardElWidth, 300)
   }
 
   initEvents () {
@@ -204,7 +206,7 @@ module.exports = class DashboardUI extends Plugin {
       })
     })
 
-    window.addEventListener('resize', (ev) => this.updateDashboardElWidth())
+    window.addEventListener('resize', this.updateDashboardElWidth)
 
     // bus.on('core:success', (uploadedCount) => {
     //   bus.emit(
@@ -218,6 +220,8 @@ module.exports = class DashboardUI extends Plugin {
 
   updateDashboardElWidth () {
     const dashboardEl = document.querySelector('.UppyDashboard-inner')
+    const containerWidth = dashboardEl.offsetWidth
+    console.log(containerWidth)
 
     const modal = this.core.getState().modal
     this.core.setState({
@@ -296,6 +300,16 @@ module.exports = class DashboardUI extends Plugin {
     const totalSpeed = prettyBytes(this.getTotalSpeed(inProgressFilesArray))
     const totalETA = prettyETA(this.getTotalETA(inProgressFilesArray))
 
+    // total size and uploaded size
+    let totalSize = 0
+    let totalUploadedSize = 0
+    inProgressFilesArray.forEach((file) => {
+      totalSize = totalSize + (file.progress.bytesTotal || 0)
+      totalUploadedSize = totalUploadedSize + (file.progress.bytesUploaded || 0)
+    })
+    totalSize = prettyBytes(totalSize)
+    totalUploadedSize = prettyBytes(totalUploadedSize)
+
     const isAllComplete = state.totalProgress === 100
     const isAllPaused = inProgressFiles.length === 0 && !isAllComplete && uploadStartedFiles.length > 0
     const isUploadStarted = uploadStartedFiles.length > 0
@@ -357,6 +371,8 @@ module.exports = class DashboardUI extends Plugin {
       totalSpeed: totalSpeed,
       totalETA: totalETA,
       totalProgress: state.totalProgress,
+      totalSize: totalSize,
+      totalUploadedSize: totalUploadedSize,
       isAllComplete: isAllComplete,
       isAllPaused: isAllPaused,
       acquirers: acquirers,

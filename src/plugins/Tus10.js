@@ -1,6 +1,8 @@
 const Plugin = require('./Plugin')
 const tus = require('tus-js-client')
 const UppySocket = require('../core/UppySocket')
+const throttle = require('lodash.throttle')
+require('whatwg-fetch')
 
 /**
  * Tus resumable file uploader
@@ -92,12 +94,10 @@ module.exports = class Tus10 extends Plugin {
 
         onError: (err) => {
           this.core.log(err)
-          this.core.emitter.emit('core:upload-error', file.id)
+          this.core.emitter.emit('core:upload-error', file.id, err)
           reject('Failed because: ' + err)
         },
         onProgress: (bytesUploaded, bytesTotal) => {
-          // Dispatch progress event
-          console.log(bytesUploaded, bytesTotal)
           this.core.emitter.emit('core:upload-progress', {
             uploader: this,
             id: file.id,
@@ -106,37 +106,31 @@ module.exports = class Tus10 extends Plugin {
           })
         },
         onSuccess: () => {
-          this.core.emitter.emit('core:upload-success', file.id, upload.url)
+          this.core.emitter.emit('core:upload-success', file.id, upload, upload.url)
 
-          this.core.log(`Download ${upload.file.name} from ${upload.url}`)
+          if (upload.url) {
+            this.core.log(`Download ${upload.file.name} from ${upload.url}`)
+          }
+
           resolve(upload)
         }
       })
 
-      this.core.emitter.on('core:file-remove', (fileID) => {
-        if (fileID === file.id) {
-          console.log('removing file: ', fileID)
-          upload.abort()
-          resolve(`upload ${fileID} was removed`)
-        }
+      this.onFileRemove(file.id, () => {
+        this.core.log('removing file:', file.id)
+        upload.abort()
+        resolve(`upload ${file.id} was removed`)
       })
 
-      this.core.emitter.on('core:upload-pause', (fileID) => {
-        if (fileID === file.id) {
-          const isPaused = this.pauseResume('toggle', fileID)
-          isPaused ? upload.abort() : upload.start()
-        }
+      this.onPause(file.id, (isPaused) => {
+        isPaused ? upload.abort() : upload.start()
       })
 
-      this.core.emitter.on('core:pause-all', () => {
-        const files = this.core.getState().files
-        if (!files[file.id]) return
+      this.onPauseAll(file.id, () => {
         upload.abort()
       })
 
-      this.core.emitter.on('core:resume-all', () => {
-        const files = this.core.getState().files
-        if (!files[file.id]) return
+      this.onResumeAll(file.id, () => {
         upload.start()
       })
 
@@ -169,7 +163,8 @@ module.exports = class Tus10 extends Plugin {
 
         res.json().then((data) => {
           // get the host domain
-          var regex = /^(?:https?:\/\/|\/\/)?(?:[^@\/\n]+@)?(?:www\.)?([^\/\n]+)/
+          // var regex = /^(?:https?:\/\/|\/\/)?(?:[^@\/\n]+@)?(?:www\.)?([^\/\n]+)/
+          var regex = /^(?:https?:\/\/|\/\/)?(?:[^@\n]+@)?(?:www\.)?([^\n]+)/
           var host = regex.exec(file.remote.host)[1]
           var socketProtocol = location.protocol === 'https:' ? 'wss' : 'ws'
 
@@ -178,7 +173,24 @@ module.exports = class Tus10 extends Plugin {
             target: socketProtocol + `://${host}/api/${token}`
           })
 
-          socket.on('progress', (progressData) => {
+          this.onFileRemove(file.id, () => {
+            socket.send('pause', {})
+            resolve(`upload ${file.id} was removed`)
+          })
+
+          this.onPause(file.id, (isPaused) => {
+            isPaused ? socket.send('pause', {}) : socket.send('resume', {})
+          })
+
+          this.onPauseAll(file.id, () => {
+            socket.send('pause', {})
+          })
+
+          this.onResumeAll(file.id, () => {
+            socket.send('resume', {})
+          })
+
+          const emitProgress = (progressData) => {
             const {progress, bytesUploaded, bytesTotal} = progressData
 
             if (progress) {
@@ -191,16 +203,50 @@ module.exports = class Tus10 extends Plugin {
                 bytesUploaded: bytesUploaded,
                 bytesTotal: bytesTotal
               })
-
-              if (progress === '100.00') {
-                this.core.emitter.emit('core:upload-success', file.id)
-                socket.close()
-                return resolve()
-              }
             }
+          }
+
+          const throttledEmitProgress = throttle(emitProgress, 300, {leading: true, trailing: true})
+          socket.on('progress', throttledEmitProgress)
+
+          socket.on('success', (data) => {
+            this.core.emitter.emit('core:upload-success', file.id, data, data.url)
+            socket.close()
+            return resolve()
           })
         })
       })
+    })
+  }
+
+  onFileRemove (fileID, cb) {
+    this.core.emitter.on('core:file-remove', (targetFileID) => {
+      if (fileID === targetFileID) cb()
+    })
+  }
+
+  onPause (fileID, cb) {
+    this.core.emitter.on('core:upload-pause', (targetFileID) => {
+      if (fileID === targetFileID) {
+        const isPaused = this.pauseResume('toggle', fileID)
+        cb(isPaused)
+      }
+    })
+  }
+
+  onPauseAll (fileID, cb) {
+    this.core.emitter.on('core:pause-all', () => {
+      const files = this.core.getState().files
+      if (!files[fileID]) return
+      cb()
+    })
+  }
+
+  onResumeAll (fileID, cb) {
+    this.core.emitter.on('core:resume-all', () => {
+      const files = this.core.getState().files
+      if (!files[fileID]) return
+      cb()
     })
   }
 

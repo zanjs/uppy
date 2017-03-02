@@ -2,9 +2,9 @@ const html = require('yo-yo')
 
 module.exports = (props) => {
   return html`
-    <div class="UppyProvider-error">
+    <div class="UppyProvider-loading">
       <span>
-        Something went wrong.  Probably our fault. ${props.error}
+        Loading ...
       </span>
     </div>
   `

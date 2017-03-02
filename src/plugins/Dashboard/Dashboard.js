@@ -10,7 +10,7 @@ const { closeIcon } = require('./icons')
 // http://dev.edenspiekermann.com/2016/02/11/introducing-accessible-modal-dialog
 
 module.exports = function Dashboard (props) {
-  const handleInputChange = (ev) => {
+  function handleInputChange (ev) {
     ev.preventDefault()
     const files = toArray(ev.target.files)
 
@@ -26,7 +26,7 @@ module.exports = function Dashboard (props) {
 
   // @TODO Exprimental, work in progress
   // no names, weird API, Chrome-only http://stackoverflow.com/a/22940020
-  const handlePaste = (ev) => {
+  function handlePaste (ev) {
     ev.preventDefault()
 
     const files = toArray(ev.clipboardData.items)
@@ -43,8 +43,6 @@ module.exports = function Dashboard (props) {
       })
     })
   }
-
-  const dashboardSize = props.inline ? `width: ${props.maxWidth}px; height: ${props.maxHeight}px;` : ''
 
   return html`
     <div class="Uppy UppyTheme--default UppyDashboard
@@ -65,13 +63,14 @@ module.exports = function Dashboard (props) {
             title="${props.i18n('closeModal')}"
             onclick=${props.hideModal}>${closeIcon()}</button>
 
-    <div class="UppyDashboard-overlay"
-         onclick=${props.hideModal}>
-    </div>
+    <div class="UppyDashboard-overlay" onclick=${props.hideModal}></div>
 
     <div class="UppyDashboard-inner"
          tabindex="0"
-         style="${dashboardSize}">
+         style="
+          ${props.inline && props.maxWidth ? `max-width: ${props.maxWidth}px;` : ''}
+          ${props.inline && props.maxHeight ? `max-height: ${props.maxHeight}px;` : ''}
+         ">
       <div class="UppyDashboard-innerWrap">
 
         ${Tabs({
@@ -147,6 +146,8 @@ module.exports = function Dashboard (props) {
           ${StatusBar({
             totalProgress: props.totalProgress,
             totalFileCount: props.totalFileCount,
+            totalSize: props.totalSize,
+            totalUploadedSize: props.totalUploadedSize,
             uploadStartedFiles: props.uploadStartedFiles,
             isAllComplete: props.isAllComplete,
             isAllPaused: props.isAllPaused,

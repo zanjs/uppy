@@ -1,9 +1,10 @@
 const Utils = require('../core/Utils')
 const Translator = require('../core/Translator')
-const ee = require('namespace-emitter')
 const UppySocket = require('./UppySocket')
+const ee = require('namespace-emitter')
+const throttle = require('lodash.throttle')
 // const en_US = require('../locales/en_US')
-// import deepFreeze from 'deep-freeze-strict'
+// const deepFreeze = require('deep-freeze-strict')
 
 /**
  * Main Uppy core
@@ -37,6 +38,7 @@ class Uppy {
     this.initSocket = this.initSocket.bind(this)
     this.log = this.log.bind(this)
     this.addFile = this.addFile.bind(this)
+    this.calculateProgress = this.calculateProgress.bind(this)
 
     this.bus = this.emitter = ee()
     this.on = this.bus.on.bind(this.bus)
@@ -51,6 +53,7 @@ class Uppy {
     }
 
     // for debugging and testing
+    this.updateNum = 0
     if (this.opts.debug) {
       global.UppyState = this.state
       global.uppyLog = ''
@@ -142,7 +145,7 @@ class Uppy {
     this.setState({files: updatedFiles})
 
     this.bus.emit('file-added', fileID)
-    this.log(`Added file: ${fileName}, ${fileID}`)
+    this.log(`Added file: ${fileName}, ${fileID}, mime type: ${fileType}`)
 
     if (fileTypeGeneral === 'image' && !isRemote) {
       this.addThumbnail(newFile.id)
@@ -157,6 +160,7 @@ class Uppy {
     const updatedFiles = Object.assign({}, this.getState().files)
     delete updatedFiles[fileID]
     this.setState({files: updatedFiles})
+    this.calculateTotalProgress()
     this.log(`Removed file: ${fileID}`)
   }
 
@@ -182,8 +186,10 @@ class Uppy {
   calculateProgress (data) {
     const fileID = data.id
     const updatedFiles = Object.assign({}, this.getState().files)
+
+    // skip progress event for a file that’s been removed
     if (!updatedFiles[fileID]) {
-      console.error('Trying to set progress for a file that’s not with us anymore: ', fileID)
+      this.log('Trying to set progress for a file that’s not with us anymore: ', fileID)
       return
     }
 
@@ -192,24 +198,38 @@ class Uppy {
         progress: Object.assign({}, updatedFiles[fileID].progress, {
           bytesUploaded: data.bytesUploaded,
           bytesTotal: data.bytesTotal,
-          percentage: Math.round((data.bytesUploaded / data.bytesTotal * 100).toFixed(2))
+          percentage: Math.floor((data.bytesUploaded / data.bytesTotal * 100).toFixed(2))
         })
       }
     ))
     updatedFiles[data.id] = updatedFile
 
+    this.setState({
+      files: updatedFiles
+    })
+
+    this.calculateTotalProgress()
+  }
+
+  calculateTotalProgress () {
     // calculate total progress, using the number of files currently uploading,
     // multiplied by 100 and the summ of individual progress of each file
-    const inProgress = Object.keys(updatedFiles).filter((file) => {
-      return updatedFiles[file].progress.uploadStarted
+    const files = Object.assign({}, this.getState().files)
+
+    const inProgress = Object.keys(files).filter((file) => {
+      return files[file].progress.uploadStarted
     })
     const progressMax = inProgress.length * 100
     let progressAll = 0
     inProgress.forEach((file) => {
-      progressAll = progressAll + updatedFiles[file].progress.percentage
+      progressAll = progressAll + files[file].progress.percentage
     })
 
-    const totalProgress = Math.round((progressAll * 100 / progressMax).toFixed(2))
+    const totalProgress = Math.floor((progressAll * 100 / progressMax).toFixed(2))
+
+    this.setState({
+      totalProgress: totalProgress
+    })
 
     // if (totalProgress === 100) {
     //   const completeFiles = Object.keys(updatedFiles).filter((file) => {
@@ -218,11 +238,6 @@ class Uppy {
     //   })
     //   this.emit('core:success', completeFiles.length)
     // }
-
-    this.setState({
-      totalProgress: totalProgress,
-      files: updatedFiles
-    })
   }
 
   /**
@@ -236,7 +251,10 @@ class Uppy {
     //   console.log('with payload: ', payload)
     // })
 
-    // const bus = this.bus
+    // stress-test re-rendering
+    // setInterval(() => {
+    //   this.setState({bla: 'bla'})
+    // }, 20)
 
     this.on('core:file-add', (data) => {
       this.addFile(data)
@@ -269,36 +287,38 @@ class Uppy {
       this.setState({files: updatedFiles})
     })
 
-    // const throttledCalculateProgress = throttle(1000, (data) => this.calculateProgress(data))
+    const throttledCalculateProgress = throttle(this.calculateProgress, 300)
 
     this.on('core:upload-progress', (data) => {
-      this.calculateProgress(data)
-      // throttledCalculateProgress(data)
+      // this.calculateProgress(data)
+      throttledCalculateProgress(data)
     })
 
-    this.on('core:upload-success', (fileID, uploadURL) => {
+    this.on('core:upload-success', (fileID, uploadResp, uploadURL) => {
       const updatedFiles = Object.assign({}, this.getState().files)
       const updatedFile = Object.assign({}, updatedFiles[fileID], {
         progress: Object.assign({}, updatedFiles[fileID].progress, {
-          uploadComplete: true
+          uploadComplete: true,
+          // good or bad idea? setting the percentage to 100 if upload is successful,
+          // so that if we lost some progress events on the way, its still marked “compete”?
+          percentage: 100
         }),
         uploadURL: uploadURL
       })
       updatedFiles[fileID] = updatedFile
 
-      // console.log(this.getState().totalProgress)
+      this.setState({
+        files: updatedFiles
+      })
+
+      this.calculateTotalProgress()
 
       if (this.getState().totalProgress === 100) {
         const completeFiles = Object.keys(updatedFiles).filter((file) => {
-          // this should be `uploadComplete`
           return updatedFiles[file].progress.uploadComplete
         })
         this.emit('core:success', completeFiles.length)
       }
-
-      this.setState({
-        files: updatedFiles
-      })
     })
 
     this.on('core:update-meta', (data, fileID) => {
@@ -336,17 +356,6 @@ class Uppy {
  * @return {Object} self for chaining
  */
   use (Plugin, opts) {
-    // Prepare props to pass to plugins
-    // const props = {
-    //   getState: this.getState.bind(this),
-    //   setState: this.setState.bind(this),
-    //   updateMeta: this.updateMeta.bind(this),
-    //   addFile: this.addFile.bind(this),
-    //   i18n: this.i18n.bind(this),
-    //   bus: this.ee,
-    //   log: this.log.bind(this)
-    // }
-
     // Instantiate
     const plugin = new Plugin(this, opts)
     const pluginName = plugin.id
@@ -463,12 +472,6 @@ class Uppy {
     return
   }
 }
-
-// module.exports = function (opts) {
-//   if (!(this instanceof Uppy)) {
-//     return new Uppy(opts)
-//   }
-// }
 
 module.exports = function (opts) {
   if (!(this instanceof Uppy)) {

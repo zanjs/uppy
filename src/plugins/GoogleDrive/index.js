@@ -28,6 +28,7 @@ module.exports = class Google extends Plugin {
 
     this.files = []
 
+    this.onAuth = this.onAuth.bind(this)
     // Visual
     this.render = this.render.bind(this)
 
@@ -58,15 +59,16 @@ module.exports = class Google extends Plugin {
     const plugin = this
     this.target = this.mount(target, plugin)
 
-    this[this.id].auth()
-      .then((authenticated) => {
-        this.view.updateState({authenticated})
-        if (authenticated) {
-          this.view.getFolder('root')
-        }
-      })
-
+    // catch error here.
+    this[this.id].auth().then(this.onAuth).catch(this.view.handleError)
     return
+  }
+
+  onAuth (authenticated) {
+    this.view.updateState({authenticated})
+    if (authenticated) {
+      this.view.getFolder('root')
+    }
   }
 
   isFolder (item) {
@@ -74,7 +76,7 @@ module.exports = class Google extends Plugin {
   }
 
   getItemData (item) {
-    return item
+    return Object.assign({}, item, {size: parseFloat(item.fileSize)})
   }
 
   getItemIcon (item) {
@@ -86,7 +88,7 @@ module.exports = class Google extends Plugin {
   }
 
   getItemName (item) {
-    return item.title
+    return item.title ? item.title : '/'
   }
 
   getMimeType (item) {

@@ -1,4 +1,5 @@
 const yo = require('yo-yo')
+// const nanoraf = require('nanoraf')
 
 /**
  * Boilerplate that all Plugins share - and should not be used
@@ -23,12 +24,28 @@ module.exports = class Plugin {
     this.mount = this.mount.bind(this)
     this.focus = this.focus.bind(this)
     this.install = this.install.bind(this)
+
+    // this.frame = null
   }
 
   update (state) {
     if (typeof this.el === 'undefined') {
       return
     }
+
+    // const prev = {}
+    // if (!this.frame) {
+    //   console.log('creating frame')
+    //   this.frame = nanoraf((state, prev) => {
+    //     console.log('updating!', Date.now())
+    //     const newEl = this.render(state)
+    //     this.el = yo.update(this.el, newEl)
+    //   })
+    // }
+    // console.log('attempting an update...', Date.now())
+    // this.frame(state, prev)
+
+    this.core.log('update number: ' + this.core.updateNum++)
 
     const newEl = this.render(state)
     yo.update(this.el, newEl)

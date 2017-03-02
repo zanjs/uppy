@@ -1,6 +1,7 @@
 const AuthView = require('./AuthView')
-const Browser = require('./new/Browser')
+const Browser = require('./Browser')
 const ErrorView = require('./Error')
+const LoaderView = require('./Loader')
 
 /**
  * Class to easily generate generic views for plugins
@@ -49,10 +50,12 @@ module.exports = class View {
     this.getNextFolder = this.getNextFolder.bind(this)
     this.handleRowClick = this.handleRowClick.bind(this)
     this.logout = this.logout.bind(this)
+    this.handleAuth = this.handleAuth.bind(this)
     this.handleDemoAuth = this.handleDemoAuth.bind(this)
     this.sortByTitle = this.sortByTitle.bind(this)
     this.sortByDate = this.sortByDate.bind(this)
     this.isActiveRow = this.isActiveRow.bind(this)
+    this.handleError = this.handleError.bind(this)
 
     // Visual
     this.render = this.render.bind(this)
@@ -73,9 +76,10 @@ module.exports = class View {
    * @param  {String} id Folder id
    * @return {Promise}   Folders/files in folder
    */
-  getFolder (id) {
-    return this.Provider.list(id)
-      .then((res) => {
+  getFolder (id, name) {
+    return this._loaderWrapper(
+      this.Provider.list(id),
+      (res) => {
         let folders = []
         let files = []
         let updatedDirectories
@@ -86,7 +90,7 @@ module.exports = class View {
         if (index !== -1) {
           updatedDirectories = state.directories.slice(0, index + 1)
         } else {
-          updatedDirectories = state.directories.concat([{id, title: this.plugin.getItemName(res)}])
+          updatedDirectories = state.directories.concat([{id, title: name || this.plugin.getItemName(res)}])
         }
 
         this.plugin.getItemSubList(res).forEach((item) => {
@@ -101,10 +105,8 @@ module.exports = class View {
         this.updateState(data)
 
         return data
-      })
-      .catch((err) => {
-        return err
-      })
+      },
+      this.handleError)
   }
 
   /**
@@ -114,7 +116,7 @@ module.exports = class View {
    */
   getNextFolder (folder) {
     let id = this.plugin.getItemRequestPath(folder)
-    this.getFolder(id)
+    this.getFolder(id, this.plugin.getItemName(folder))
   }
 
   addFile (file) {
@@ -155,7 +157,7 @@ module.exports = class View {
           }
           this.updateState(newState)
         }
-      })
+      }).catch(this.handleError)
   }
 
   /**
@@ -253,24 +255,72 @@ module.exports = class View {
     })
   }
 
+  handleAuth () {
+    const urlId = Math.floor(Math.random() * 999999) + 1
+    const redirect = `${location.href}${location.search ? '&' : '?'}id=${urlId}`
+
+    const authState = btoa(JSON.stringify({ redirect }))
+    const link = `${this.plugin.opts.host}/connect/${this.Provider.authProvider}?state=${authState}`
+
+    const authWindow = window.open(link, '_blank')
+    const checkAuth = () => {
+      let authWindowUrl
+
+      try {
+        authWindowUrl = authWindow.location.href
+      } catch (e) {
+        if (e instanceof DOMException || e instanceof TypeError) {
+          return setTimeout(checkAuth, 100)
+        } else throw e
+      }
+
+      // split url because chrome adds '#' to redirects
+      if (authWindowUrl.split('#')[0] === redirect) {
+        authWindow.close()
+        this._loaderWrapper(this.Provider.auth(), this.plugin.onAuth, this.handleError)
+      } else {
+        setTimeout(checkAuth, 100)
+      }
+    }
+
+    checkAuth()
+  }
+
+  handleError (error) {
+    this.updateState({ error })
+  }
+
+  // displays loader view while asynchronous request is being made.
+  _loaderWrapper (promise, then, catch_) {
+    promise
+      .then((result) => {
+        this.updateState({ loading: false })
+        then(result)
+      })
+      .catch((err) => {
+        this.updateState({ loading: false })
+        catch_(err)
+      })
+    this.updateState({ loading: true })
+  }
+
   render (state) {
-    const { authenticated, error } = state[this.plugin.stateId]
+    const { authenticated, error, loading } = state[this.plugin.stateId]
 
     if (error) {
+      this.updateState({ error: undefined })
       return ErrorView({ error: error })
     }
 
+    if (loading) {
+      return LoaderView()
+    }
+
     if (!authenticated) {
-      const authState = btoa(JSON.stringify({
-        redirect: location.href.split('#')[0]
-      }))
-
-      const link = `${this.plugin.opts.host}/connect/${this.Provider.authProvider}?state=${authState}`
-
       return AuthView({
         pluginName: this.plugin.title,
-        link: link,
         demo: this.plugin.opts.demo,
+        handleAuth: this.handleAuth,
         handleDemoAuth: this.handleDemoAuth
       })
     }
