@@ -167,10 +167,18 @@ module.exports = class XHRUpload extends Plugin {
         clearTimeout(aliveTimer)
 
         if (ev.target.status >= 200 && ev.target.status < 300) {
-          const resp = opts.getResponseData(xhr)
-          const uploadURL = resp[opts.responseUrlFieldName]
+          const body = opts.getResponseData(xhr)
+          const uploadURL = body[opts.responseUrlFieldName]
 
-          this.uppy.emit('upload-success', file.id, resp, uploadURL)
+          const response = {
+            status: ev.target.status,
+            body,
+            uploadURL
+          }
+
+          this.uppy.setFileState(file.id, { response })
+
+          this.uppy.emit('upload-success', file.id, body, uploadURL)
 
           if (uploadURL) {
             this.uppy.log(`Download ${file.name} from ${file.uploadURL}`)
@@ -178,7 +186,16 @@ module.exports = class XHRUpload extends Plugin {
 
           return resolve(file)
         } else {
+          const body = opts.getResponseData(xhr)
           const error = buildResponseError(xhr, opts.getResponseError(xhr))
+
+          const response = {
+            status: ev.target.status,
+            body
+          }
+
+          this.uppy.setFileState(file.id, { response })
+
           this.uppy.emit('upload-error', file.id, error)
           return reject(error)
         }
